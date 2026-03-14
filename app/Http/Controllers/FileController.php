@@ -2,147 +2,130 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\FileMetaDataFormRequest;
 use App\Http\Requests\UploadFileFormRequest;
+use App\Http\Requests\VisibilityFormRequest;
 use App\Http\Resources\FileResource;
+use App\Http\Resources\FolderResource;
 use App\Models\File;
 use App\Models\Folder;
-use App\Models\User;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use App\Services\FileService;
+use Illuminate\Routing\Controller;
 
-class FileController
+class FileController extends Controller
 {
-    public function upload(UploadFileFormRequest $request)
+    public $fileService;
+
+    public function __construct()
     {
-        $user = auth('api')->user();
-        $data = $request->validated();
-
-        $name = Str::beforeLast($request->file('file')->getClientOriginalName(), '.');
-        $format = $request->file('file')->getClientOriginalExtension();
-        $size = $request->file('file')->getSize();
-
-        $path = Storage::disk('s3')->putFileAs('files', $request->file('file'), Str::slug($name) . "-" . Str::random(3) . "." . $format);
-
-        $file = File::create([
-            'user_id' => $user->id,
-            'folder_id' => $data['folder_id'] ?? null,
-            'name' => $name,
-            'format' => $format,
-            'path' => $path,
-            'size' => $size,
-            'visibility' => $data['visibility'] ?? 'private',
-        ]);
-
-
-        return response()->json([
-            "message" => 'file uploaded!',
-            'data' => new FileResource($file)
-        ], 201);
+        $this->fileService = new FileService;
     }
 
-
-    /*
-order is done "by" creation date and file size.
-DESC+created_at = latest
-*/
-    public function index(Request $request)
+    public function index(FileMetaDataFormRequest $request)
     {
-        $user = auth('api')->user();
-
-        $files = File::where('user_id', $user->id)
-            ->orderBy($request->by ?? 'created_at', $request->order ?? "DESC")
+        $files = File::searchByName($request->search ?? '')
+            ->orderBy($request->by ?? 'created_at', $request->order ?? 'DESC')
             ->paginate($request->per_page);
 
         return FileResource::collection($files);
     }
 
-    /*
-add search as a query param
-*/
-    public function search(Request $request)
+    public function show($id)
     {
-        $user = auth('api')->user();
-        $result = File::search($request->search)
-            ->where('user_id', $user->id)->paginate($request->per_page ?? 10);
-
-        return FileResource::collection($result);
-    }
-
-
-    public function delete($id)
-    {
-        $user = auth('api')->user();
-
-        $target = File::where('user_id', $user->id)->where('id', $id)->first();
-        if (!$target) {
-            return response()->json(['message' => "could not find this file"], 404);
+        $result = File::where('id', $id)
+            ->My()->first();
+        if (! $result) {
+            return response()->json(['message' => 'file not found'], 404);
         }
-        Storage::disk('s3')->delete($target->path);
-        $target->delete();
 
-        return response()->json(['message' => "file {$target->name} has been deleted"], 200);
+        return new FileResource($result);
     }
-
 
     public function addToFolder($id, $folder_id)
     {
-        $user = auth('api')->user();
-        $folder = Folder::find($folder_id);
-        if($folder->user_id !== $user->id){
-return response()->json(['message'=>'unauthorized to manage this folder'],403);
-        }
-        $file = File::where('id', $id)->where('user_id', $user->id)->first();
+        $file = File::where('id', $id)->My()->first();
+        $folder = Folder::with('files')->where('id', $folder_id)->My()->first();
 
-        if (!$file) {
-            return response()->json(['message' => "could not find this file"], 404);
+        if (! $file) {
+            return response()->json(['message' => 'file not found'], 404);
+        }
+        if (! $folder) {
+            return response()->json(['message' => 'folder not found'], 404);
         }
 
-        $file->update(["folder_id" => $folder_id]);
-        return response()->json(['message' => "file has been added to folder"], 200);
+        if ($file->folder_id === $folder->id) {
+            return response()->json(['message' => 'file already exists in this folder'], 409);
+        }
+        $file->update(['folder_id' => $folder_id]);
+
+        return response()->json(['data' => new FolderResource($folder)], 200);
     }
 
-
-    public function changeVisibility($id, Request $request)
+    public function changeVisibility($id, VisibilityFormRequest $request)
     {
-        $user = auth('api')->user();
-        $file = File::where('user_id', $user->id)->where('id', $id)->first();
-        if (!$file) {
-            return response()->json(['message' => "could not find this file"], 404);
+        $file = $this->fileService->changeVisibility($id, $request);
+        if (! $file) {
+            return response()->json(['message' => 'file not found'], 404);
+        }
+        if ($file['status'] === 'same') {
+            return response()->json(['message' => "visibility is already set to {$request->visibility}.", 'data' => new FileResource($file['data'])], 409);
         }
 
-        $file->update(["visibility" => $request->visibility]);
-        return response()->json(['message' => "visibility has been changed to {$request->visibility}."], 200);
+        return response()->json(['message' => "visibility has been changed to {$file->visibility}.", 'data' => new FileResource($file)], 200);
     }
 
+    public function removeFromFolder($id)
+    {
+        $file = File::where('id', $id)->My()->first();
+        if (! $file) {
+            return response()->json(['message' => 'file not found'], 404);
+        }
+        if (! $file->folder_id) {
+            return response()->json(['message' => 'file is not in a folder'], 409);
+        }
+        $file->update(['folder_id' => null]);
 
+        return response()->json(['message' => 'file removed from folder', 'data' => new FileResource($file)], 200);
+    }
+
+    public function upload(UploadFileFormRequest $request)
+    {
+        $user_id = auth('api')->user()->id;
+        $file = $this->fileService->uploadFile($request, $user_id);
+
+        return response()->json([
+            'message' => 'file uploaded!',
+            'data' => new FileResource($file),
+        ], 201);
+    }
 
     public function generateLink($file_id)
     {
-        $user = auth('api')->user();
-
-        $file = File::where('user_id', $user->id)->where('id', $file_id)->first();
-        if (!$file) {
-            return response()->json(['message' => "could not find this file"], 404);
+        $file = File::where('id', $file_id)->My()->first();
+        if (! $file) {
+            return response()->json(['message' => 'could not find this file'], 404);
         }
+
         return response()->json(['link' => url("/api/file/download/{$file_id}")], 200);
     }
 
-
-
-
     public function download(File $file)
     {
-
-        if ($file->visibility === 'private') {
-
-            if (!auth('api')->user()) {
-                return response()->json(['message' => 'unauthorized'], 401);
-            }
+        $result = $this->fileService->download($file);
+        if (! $result) {
+            return response()->json(['message' => 'unauthorized'], 401);
         }
 
-        $file->increment('download_count');
+        return $result;
+    }
 
-        return Storage::disk('s3')->download($file->path, $file->name . '.' . $file->format);
+    public function destroy($id)
+    {
+        $file = $this->fileService->deleteFile($id);
+        if (! $file) {
+            return response()->json(['message' => 'could not find this file'], 404);
+        }
+
+        return response()->json(['message' => "file {$file->name} has been deleted"], 200);
     }
 }

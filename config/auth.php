@@ -40,10 +40,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-          'api' => [
-        'driver' => 'jwt',
-        'provider' => 'users',
-    ],
+        'api' => [
+            'driver' => 'jwt',
+            'provider' => 'users',
+        ],
     ],
 
     /*
@@ -116,7 +116,6 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
-
     /*
     |--------------------------------------------------------------------------
     | email verification time
@@ -126,6 +125,6 @@ return [
     */
 
     'verification' => [
-    'expire' => 2,
-],
+        'expire' => 2,
+    ],
 ];

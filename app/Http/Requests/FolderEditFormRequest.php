@@ -3,9 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class UploadFileFormRequest extends FormRequest
+class FolderEditFormRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,13 +22,8 @@ class UploadFileFormRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => 'required|file|max:500000',
-            'folder_id' => [
-                'nullable',
-                Rule::exists('folders', 'id')->where('user_id', auth('api')->user()->id),
-            ],
-
-            'visibility' => 'nullable|in:public,private',
+            'name' => 'sometimes|string|max:35',
+            'description' => 'sometimes|string|max:200',
         ];
     }
 }

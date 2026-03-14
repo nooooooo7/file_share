@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use Laravel\Scout\Searchable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
 
 class File extends Model
 {
-
-    use SoftDeletes, Searchable;
+    use Searchable, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -19,19 +18,31 @@ class File extends Model
         'path',
         'size',
         'download_count',
-        'visibility'
+        'visibility',
     ];
 
     protected $attributes = [
-    'visibility' => 'private',
-    'download_count' => 0,
-];
+        'visibility' => 'private',
+        'download_count' => 0,
+    ];
 
     public function toSearchableArray(): array
     {
         return [
             'name' => $this->name,
         ];
+    }
+
+    public static function searchByName($term)
+    {
+        return static::search($term)->where('user_id', auth('api')->user()->id);
+    }
+
+    public function scopeMy($query)
+    {
+        $user = auth('api')->user();
+
+        return $query->where('user_id', $user->id);
     }
 
     public function folder()

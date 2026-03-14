@@ -21,8 +21,6 @@ return new class extends Migration
             $table->timestamps();
             $table->unique(['email', 'deleted_at']);
         });
-
-
     }
 
     /**

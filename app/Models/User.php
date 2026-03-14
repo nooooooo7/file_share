@@ -4,17 +4,17 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
-    use SoftDeletes;
 
+    use SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -49,8 +49,7 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
-
-        public function getJWTIdentifier()
+    public function getJWTIdentifier()
     {
         return $this->getKey();
     }
@@ -60,12 +59,13 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 
-
-    public function folders(){
-       return $this->hasMany(Folder::class);
+    public function folders()
+    {
+        return $this->hasMany(Folder::class);
     }
 
-    public function files(){
+    public function files()
+    {
         return $this->hasMany(File::class);
     }
 }

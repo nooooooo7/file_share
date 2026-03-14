@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class folderResource extends JsonResource
+class FolderResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,10 +17,11 @@ class folderResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'files count' => $this->files_count,
-            'description'=>$this->description,
+            'files_count' => $this->files_count,
+            'description' => $this->description,
             'created_by' => $this->user->name,
-            'files' => FileResource::collection($this->whenLoaded('files'))
+            'created_at' => $this->created_at->format('Y m d, h:i A'),
+            'files' => FileResource::collection($this->whenLoaded('files')),
 
         ];
     }

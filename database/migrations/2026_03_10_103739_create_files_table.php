@@ -15,16 +15,16 @@ return new class extends Migration
             $table->id();
             $table->foreignId('folder_id')->nullable()->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string("name");
+            $table->string('name');
             $table->string('format');
             $table->string('path');
             $table->unsignedBigInteger('size');
             $table->integer('download_count')->default(0);
-            $table->enum("visibility", ['private', 'public'])->default('private');
+            $table->enum('visibility', ['private', 'public'])->default('private');
             $table->timestamps();
             $table->softDeletes();
-            // indexes  
-            $table->index("visibility");
+            // indexes
+            $table->index('visibility');
             $table->index('download_count');
             $table->index('size');
             $table->index('name');

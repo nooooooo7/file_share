@@ -8,11 +8,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Folder extends Model
 {
     use SoftDeletes;
+
     protected $fillable = [
         'user_id',
-         'name',
-         'description'
-         ];
+        'name',
+        'description',
+    ];
+
+    public function scopeMy($query)
+    {
+        return $query->where('user_id', auth('api')->user()->id);
+    }
 
     public function user()
     {

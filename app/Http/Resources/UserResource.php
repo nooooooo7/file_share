@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class FileResource extends JsonResource
+class UserResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,13 +17,8 @@ class FileResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'format' => $this->format,
-            'size' => $this->size,
-            'path' => $this->path,
-            'visibility' => $this->visibility,
-            'download_count' => $this->download_count,
-            'uploaded_at' => $this->created_at->format('Y m d, h:i A'),
-            'folder_id' => $this->folder_id,
+            'email' => $this->email,
+            'member_since' => $this->created_at->format('Y m d, h:i A'),
         ];
     }
 }

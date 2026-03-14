@@ -2,53 +2,50 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Http\Requests\authFormRequest;
+use App\Http\Requests\AuthFormRequest;
+use App\Http\Requests\LoginFormRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Routing\Controller;
 
-class authController extends Controller
+class AuthController extends Controller
 {
-
-
-    public function register(authFormRequest $request)
+    public function register(AuthFormRequest $request)
     {
         $data = $request->validated();
         $user = User::create($data);
         $token = auth('api')->login($user);
 
-        return response()->json(['token' => $token], 201);
+        return response()->json(['token' => $token, 'data' => new UserResource($user)], 201);
     }
 
-
-
-    public function login(Request $request)
+    public function login(LoginFormRequest $request)
     {
-        $data = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+        $data = $request->validated();
 
-        if (!$token = auth('api')->attempt($data)) {
+        if (auth('api')->check()) {
+            return response()->json(['message' => 'user is already logged in'], 409);
+        }
+        if (! $token = auth('api')->attempt($data)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-
-        return response()->json(['token' => $token], 200);
+        return response()->json(['token' => $token, 'data' => new UserResource(auth('api')->user())], 200);
     }
 
     public function logout()
     {
         auth('api')->logout();
-        return response()->json(['message' => 'logged out']);
+
+        return response()->json(['message' => 'logged out'], 200);
     }
 
-    public function delete()
+    public function destroy()
     {
-        $id = auth('api')->user()->id;
-        $user = User::find($id);
+        $user = auth('api')->user();
         $user->delete();
         auth('api')->logout();
-        return response()->json(['message' => 'good bye']);
+
+        return response()->json(['message' => 'good bye'], 200);
     }
 }

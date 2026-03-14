@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class authFormRequest extends FormRequest
+class AuthFormRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,9 +23,9 @@ class authFormRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => "required|string",
+            'name' => 'required|string',
             'email' => ['required', 'email', Rule::unique('users')->whereNull('deleted_at')],
-            'password' => "required|min:6|confirmed"
+            'password' => 'required|min:6|confirmed',
         ];
     }
 }

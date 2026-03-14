@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class createFolderFormRequest extends FormRequest
+class CreateFolderFormRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,8 +22,8 @@ class createFolderFormRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "name" => "required|max:35",
-            "description"=>"nullable|max:200"
+            'name' => 'required|max:35',
+            'description' => 'nullable|max:200',
         ];
     }
 }
